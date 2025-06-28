@@ -164,3 +164,37 @@ This project is licensed under the European Union Free Public License (EUFPL) v1
 See the file EUFPL.txt in this repository for the full license text, or visit:
 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
 
+---
+
+## Continuous Integration (CI) with GitHub Actions
+
+This project uses GitHub Actions to automate the building and testing of the Android application.
+
+**Workflow:**
+
+The CI pipeline is defined in `.github/workflows/android-ci.yml` and performs the following:
+
+1.  **On every push to `main` or pull request to `main`:**
+    *   Checks out the code.
+    *   Sets up JDK 11 and the Android SDK.
+    *   Grants execute permissions to `gradlew`.
+    *   Runs unit tests (`./gradlew test`).
+2.  **If tests pass:**
+    *   Builds the release APK (`./gradlew assembleRelease`).
+    *   (Optionally, if configured) Builds the release AAB (`./gradlew bundleRelease`).
+    *   Builds a debug APK (`./gradlew assembleDebug`) as a fallback.
+    *   Uploads the generated APKs (and AAB, if built) as build artifacts.
+
+**Configuration:**
+
+To enable full functionality, especially for creating signed release builds, some manual configuration is required. This primarily involves setting up a signing keystore and adding its credentials as GitHub Secrets.
+
+For detailed instructions on how to:
+*   Generate a signing keystore.
+*   Add the necessary secrets (e.g., `ANDROID_SIGNING_KEY_BASE64`, `ANDROID_SIGNING_KEY_ALIAS`, etc.) to your GitHub repository.
+*   Configure your `build.gradle.kts` for signing.
+*   Choose between APK and AAB outputs.
+
+Please refer to the **[GitHub Actions Configuration Tutorial](configure_github_tutorial.md)**.
+
+Without these secrets, the workflow will still run tests and attempt to build unsigned release artifacts and a debug artifact.
