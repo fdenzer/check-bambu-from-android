@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_title">Bambu Lab Login</string>
+    <string name="login_email_label">Email</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_verification_code_label">Verification Code</string>
+    <string name="login_button_login">Login</string>
+    <string name="login_button_verify">Verify Code</string>
+
+    <string name="status_title">Printer Status</string>
+    <string name="status_refresh_action">Refresh Status</string>
+    <string name="status_logout_button">Logout</string>
+    <string name="status_retry_button">Retry</string>
+    <string name="status_label_status">Status:</string>
+    <string name="status_label_progress">Progress:</string>
+    <string name="status_label_est_finish">Est. Finish:</string>
+    <string name="status_na">N/A</string>
+    <string name="status_no_status_available">No printer status available.</string>
+    <string name="status_button_refresh">Refresh</string>
+
+</resources>

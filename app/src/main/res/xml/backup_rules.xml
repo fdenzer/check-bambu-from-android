@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- TODO: Remove schemaLocation if not needed. -->
+    <!-- Specify what to backup.
+         Learn more at https://developer.android.com/guide/topics/data/autobackup
+    -->
+    <include domain="sharedpref" path="."/>
+    <exclude domain="sharedpref" path="device.xml"/>
+</full-backup-content>
