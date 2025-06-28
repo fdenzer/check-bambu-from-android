@@ -1,0 +1,142 @@
+# GitHub Actions workflow for Android CI
+
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11' # Build environment JDK
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2 # Using v2 as v3 might have issues for some self-hosted runners or specific configurations
+      with:
+        api-level: 34 # Matches compileSdk
+        build-tools: 34.0.0 # A common version for API 34, can be adjusted if specific version is needed
+        # ndk-version: # Add if NDK is used
+        # cmake-version: # Add if CMake is used
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Run unit tests
+      run: ./gradlew test -Pandroid.testOptions.animationsDisabled=true # Disable animations for UI tests
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11' # Build environment JDK
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      with:
+        api-level: 34
+        build-tools: 34.0.0
+        # ndk-version:
+        # cmake-version:
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build Release APK
+      id: build_apk
+      run: ./gradlew assembleRelease
+      # This step will build an unsigned APK if signing configuration is not provided in build.gradle or via secrets.
+      # To sign the APK, you'll need to configure signing in your app's build.gradle.kts
+      # and provide the keystore and credentials as GitHub secrets.
+      # Example:
+      # env:
+      #   SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      #   SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+      #   SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      #   SIGNING_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }} # Keystore file encoded in Base64
+
+    - name: Upload Release APK
+      if: success() # Upload even if signing fails or is skipped, to get the unsigned artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-release.apk
+        path: app/build/outputs/apk/release/app-release.apk # Path to the unsigned release APK
+
+    # - name: Sign APK (if not handled by Gradle)
+    #   if: success() && steps.build_apk.outputs.apk_path != '' && env.SIGNING_KEY_BASE64 != ''
+    #   uses: r0adkll/sign-android-release@v1
+    #   with:
+    #     releaseDirectory: app/build/outputs/apk/release # Adjust if your APK path is different
+    #     signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+    #     alias: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+    #     keyStorePassword: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+    #     keyPassword: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+    #   id: sign_apk
+    # - name: Upload Signed Release APK
+    #   if: success() && steps.sign_apk.outputs.signedReleaseFile != ''
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: app-release-signed.apk
+    #     path: ${{ steps.sign_apk.outputs.signedReleaseFile }}
+
+
+    # - name: Build Release AAB
+    #   id: build_aab
+    #   run: ./gradlew bundleRelease
+      # Similar to APK, signing needs to be configured for AAB.
+      # env:
+      #   SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      #   SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+      #   SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      #   SIGNING_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+    # - name: Upload Release AAB
+    #   if: success() # Upload even if signing fails or is skipped
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: app-release.aab
+    #     path: app/build/outputs/bundle/release/app-release.aab # Path to the unsigned release AAB
+
+    # - name: Sign AAB (if not handled by Gradle)
+    #   if: success() && steps.build_aab.outputs.aab_path != '' && env.SIGNING_KEY_BASE64 != ''
+    #   uses: r0adkll/sign-android-release@v1 # This action can sign both APKs and AABs
+    #   with:
+    #     releaseDirectory: app/build/outputs/bundle/release # Adjust if your AAB path is different
+    #     signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+    #     alias: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+    #     keyStorePassword: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+    #     keyPassword: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+    #   id: sign_aab
+    # - name: Upload Signed Release AAB
+    #   if: success() && steps.sign_aab.outputs.signedReleaseFile != ''
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: app-release-signed.aab
+    #     path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
+
+    - name: Build debug APK (as a fallback if release signing is not configured)
+      run: ./gradlew assembleDebug
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug.apk
+        path: app/build/outputs/apk/debug/app-debug.apk
